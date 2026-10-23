@@ -21,6 +21,7 @@
 */
 
 #include "wiring_private.h"
+#include <dbg.h>
 
 // the prescaler is set so that timer0 ticks every 64 clock cycles, and the
 // the overflow handler is called every 256 ticks.
@@ -240,6 +241,8 @@ void delayMicroseconds(unsigned int us)
 
 void init()
 {
+	DBG();
+
 	// this needs to be called before setup() or some functions won't
 	// work there
 	sei();
@@ -380,6 +383,8 @@ void init()
 	// enable a2d conversions
 	sbi(ADCSRA, ADEN);
 #endif
+
+	DBG();
 
 	// the bootloader connects pins 0 and 1 to the USART; disconnect them
 	// here so they can be used as normal digital i/o; they will be

@@ -18,6 +18,7 @@
 */
 
 #include <Arduino.h>
+#include <dbg.h>
 
 // Declared weak in Arduino.h to allow user redefinitions.
 int atexit(void (* /*func*/ )()) { return 0; }
@@ -30,23 +31,59 @@ void initVariant() { }
 void setupUSB() __attribute__((weak));
 void setupUSB() { }
 
+
+uint8_t mcusr_copy __attribute__((section(".noinit")));
+
+void early(void) __attribute__((naked, used, section(".init0")));
+void early(void) {
+
+	init_usart();
+	UCSR0A = _BV(TXC0);		// reset transmit completed bit = 1
+
+	dbg_putc('\x0a');
+	dbg_putc('\x0d');
+	dbg_putc('#');
+	dbg_putc('#');
+	dbg_putc('\x0a');
+	dbg_putc('\x0d');
+
+	dbg_flush();
+}
+
+extern int __heap_start, *__brkval;
+int freeRam() { int v; return (int)&v - (__brkval ? (int)__brkval : (int)&__heap_start); }
+
+
+
 int main(void)
 {
+	Serial.begin(9600);
+	Serial.print("FREE RAM: "); Serial.println(freeRam());
+	Serial.print("MCUSR=0x"); Serial.println(mcusr_copy, HEX);
+	Serial.flush();
+
+	DBG();
+
 	init();
 
+	UCSR0B = _BV(TXEN0);
+	DBG();
+
 	initVariant();
+
+	DBG();
 
 #if defined(USBCON)
 	USBDevice.attach();
 #endif
 	
 	setup();
-    
+
 	for (;;) {
 		loop();
 		if (serialEventRun) serialEventRun();
 	}
-        
+
 	return 0;
 }
 
